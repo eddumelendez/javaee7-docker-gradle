@@ -1,0 +1,64 @@
+group 'org.javaee7.sample'
+version '1.0-SNAPSHOT'
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath 'com.bmuschko:gradle-docker-plugin:2.6.1'
+    }
+}
+
+apply plugin: 'war'
+apply plugin: 'com.bmuschko.docker-remote-api'
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testCompile 'junit:junit:4.12'
+    providedCompile 'javax:javaee-api:7.0'
+}
+
+import com.bmuschko.gradle.docker.tasks.container.DockerCreateContainer
+import com.bmuschko.gradle.docker.tasks.container.DockerStartContainer
+import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
+
+docker {
+    url = 'https://192.168.99.100:2376'
+    certPath = new File(System.properties['user.home'], '.docker/machine/machines/default')
+}
+
+task copyDockerArtifacts(type: Copy) {
+    dependsOn build
+    from('build/libs') {
+        include 'javaee7-docker-gradle-1.0-SNAPSHOT.war'
+    }
+    from('src/main/docker') {
+        include 'Dockerfile'
+    }
+    into 'build/docker'
+    rename 'javaee7-docker-gradle-1.0-SNAPSHOT.war', 'javaee7-docker-gradle.war'
+}
+
+task buildImage(type: DockerBuildImage) {
+    dependsOn copyDockerArtifacts
+    inputDir = project.file('build/docker')
+    tag = 'eddumelendez/javaee7-docker-gradle'
+}
+
+task createContainer(type: DockerCreateContainer) {
+    dependsOn buildImage
+    targetImageId { buildImage.getImageId() }
+    portBindings = ['8080:8080']
+}
+
+task startContainer(type: DockerStartContainer) {
+    dependsOn createContainer
+    targetContainerId { createContainer.getContainerId() }
+}
