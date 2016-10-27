@@ -7,7 +7,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.bmuschko:gradle-docker-plugin:2.6.1'
+        classpath 'com.bmuschko:gradle-docker-plugin:2.6.5'
     }
 }
 
@@ -31,19 +31,19 @@ import com.bmuschko.gradle.docker.tasks.image.DockerBuildImage
 
 docker {
     url = 'https://192.168.99.100:2376'
-    certPath = new File(System.properties['user.home'], '.docker/machine/machines/default')
+    certPath = new File(System.properties['user.home'], ".docker/machine/machines/${dockerMachineName}")
 }
 
 task copyDockerArtifacts(type: Copy) {
     dependsOn build
     from('build/libs') {
-        include 'javaee7-docker-gradle-1.0-SNAPSHOT.war'
+        include "javaee7-docker-gradle-${project.version}.war"
     }
     from('src/main/docker') {
         include 'Dockerfile'
     }
     into 'build/docker'
-    rename 'javaee7-docker-gradle-1.0-SNAPSHOT.war', 'javaee7-docker-gradle.war'
+    rename "javaee7-docker-gradle-${project.version}.war", 'javaee7-docker-gradle.war'
 }
 
 task buildImage(type: DockerBuildImage) {
